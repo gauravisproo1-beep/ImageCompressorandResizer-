@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Image Compressor and Resizer</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #64748b;
+            --success: #16a34a;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #0f172a;
+            --border: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app-card {
+            width: 100%;
+            max-width: 480px;
+            background: var(--card);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+        }
+
+        header { text-align: center; margin-bottom: 24px; }
+        h1 { font-size: 1.4rem; margin: 0; color: var(--text); font-weight: 800; }
+        p.tagline { font-size: 0.85rem; color: var(--secondary); margin-top: 4px; }
+
+        .upload-container {
+            border: 2px dashed #cbd5e1;
+            padding: 40px 20px;
+            text-align: center;
+            border-radius: 16px;
+            cursor: pointer;
+            background: #f1f5f9;
+            transition: all 0.2s ease;
+        }
+
+        .upload-container:active { transform: scale(0.98); background: #e2e8f0; }
+
+        #editorSection { display: none; }
+
+        .preview-wrapper {
+            width: 100%;
+            height: 220px;
+            background: #f1f5f9;
+            border-radius: 12px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        #previewImg { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+        .controls-grid { display: flex; flex-direction: column; gap: 16px; }
+
+        .input-group { display: flex; flex-direction: column; gap: 6px; }
+        label { font-size: 0.75rem; font-weight: 700; color: var(--secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+
+        select, input[type="number"], input[type="range"] {
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 1rem;
+            width: 100%;
+            background: #fff;
+        }
+
+        .split-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        .size-badge {
+            display: flex;
+            justify-content: space-between;
+            background: #f0fdf4;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #dcfce7;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+        }
+
+        .size-badge b { color: var(--success); }
+
+        .btn-main {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+        }
+
+        .btn-reset {
+            background: transparent;
+            color: var(--secondary);
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: 10px;
+            margin-top: 10px;
+            width: 100%;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .btn-main:active { transform: translateY(1px); opacity: 0.9; }
+    </style>
+</head>
+<body>
+
+<div class="app-card">
+    <header>
+        <h1>Image Compressor and Resizer</h1>
+        <p class="tagline">Optimize your photos in seconds</p>
+    </header>
+
+    <div class="upload-container" id="dropArea">
+        <strong style="display:block; font-size:1.1rem; color:var(--primary);">Choose Image</strong>
+        <span style="font-size:0.8rem; color:var(--secondary);">PNG, JPG, WebP supported</span>
+        <input type="file" id="imageInput" accept="image/*" hidden>
+    </div>
+
+    <div id="editorSection">
+        <div class="preview-wrapper">
+            <img id="previewImg" src="">
+        </div>
+
+        <div class="controls-grid">
+            <div class="split-row">
+                <div class="input-group">
+                    <label>Format</label>
+                    <select id="formatType">
+                        <option value="image/jpeg">JPEG</option>
+                        <option value="image/webp">WebP</option>
+                        <option value="image/png">PNG</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Quality (<span id="qLabel">80</span>%)</label>
+                    <input type="range" id="qualityRange" min="5" max="100" value="80">
+                </div>
+            </div>
+
+            <div class="split-row">
+                <div class="input-group">
+                    <label>Width (px)</label>
+                    <input type="number" id="widthPx">
+                </div>
+                <div class="input-group">
+                    <label>Height (px)</label>
+                    <input type="number" id="heightPx">
+                </div>
+            </div>
+
+            <div class="size-badge">
+                <span>Before: <b id="oldSize">-</b></span>
+                <span>After: <b id="newSize">-</b></span>
+            </div>
+
+            <button class="btn-main" id="saveBtn">Download Optimized Image</button>
+            <button class="btn-reset" id="resetBtn">Upload Another Image</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const imageInput = document.getElementById('imageInput');
+    const dropArea = document.getElementById('dropArea');
+    const editorSection = document.getElementById('editorSection');
+    const previewImg = document.getElementById('previewImg');
+    const qualityRange = document.getElementById('qualityRange');
+    const formatType = document.getElementById('formatType');
+    const widthPx = document.getElementById('widthPx');
+    const heightPx = document.getElementById('heightPx');
+    const saveBtn = document.getElementById('saveBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    let originalImg = new Image();
+    let originalAspect = 1;
+    let currentBlob = null;
+
+    dropArea.onclick = () => imageInput.click();
+
+    imageInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+
+        document.getElementById('oldSize').innerText = (file.size / 1024).toFixed(1) + ' KB';
+        
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            originalImg.src = event.target.result;
+            originalImg.onload = () => {
+                originalAspect = originalImg.width / originalImg.height;
+                widthPx.value = originalImg.width;
+                heightPx.value = originalImg.height;
+                
+                dropArea.style.display = 'none';
+                editorSection.style.display = 'block';
+                updateImage();
+            };
+        };
+        reader.readAsDataURL(file);
+    };
+
+    function updateImage() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const w = parseInt(widthPx.value) || originalImg.width;
+        const h = parseInt(heightPx.value) || originalImg.height;
+
+        canvas.width = w;
+        canvas.height = h;
+
+        // Ensure white background for JPEG
+        if (formatType.value === 'image/jpeg') {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, w, h);
+        }
+
+        ctx.drawImage(originalImg, 0, 0, w, h);
+
+        const q = qualityRange.value / 100;
+        document.getElementById('qLabel').innerText = qualityRange.value;
+
+        canvas.toBlob((blob) => {
+            currentBlob = blob;
+            const url = URL.createObjectURL(blob);
+            previewImg.src = url;
+            document.getElementById('newSize').innerText = (blob.size / 1024).toFixed(1) + ' KB';
+        }, formatType.value, q);
+    }
+
+    // Maintain Aspect Ratio
+    widthPx.oninput = () => {
+        heightPx.value = Math.round(widthPx.value / originalAspect);
+        updateImage();
+    };
+    heightPx.oninput = () => {
+        widthPx.value = Math.round(heightPx.value * originalAspect);
+        updateImage();
+    };
+
+    [qualityRange, formatType].forEach(el => el.oninput = updateImage);
+
+    saveBtn.onclick = () => {
+        if (!currentBlob) return;
+        const ext = formatType.value.split('/')[1].replace('jpeg', 'jpg');
+        const a = document.createElement('a');
+        const url = URL.createObjectURL(currentBlob);
+        a.href = url;
+        a.download = `optimized_${Date.now()}.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }, 100);
+    };
+
+    resetBtn.onclick = () => {
+        editorSection.style.display = 'none';
+        dropArea.style.display = 'block';
+        imageInput.value = '';
+    };
+</script>
+
+</body>
+</html>
